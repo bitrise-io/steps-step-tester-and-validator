@@ -1,0 +1,20 @@
+
+---
+name: Bitrise Step Tester and Validator Step
+description: |
+  Validates the Step Repository and runs the Step.
+  * Checks for Required and Recommended files in the specified Step repository
+  * Runs the Step with the given parameters
+  * Validates that the Step can run without problems
+  * Prints Validation summary and the Step's formatted output (if any)
+
+inputs:
+  - title: |
+      Step Repository URL (public GitHub repository URL, example: https://github.com/bitrise-io/steps-step-tester-and-validator.git)
+    mapped_to: STEP_TESTER_STEP_REPO
+  - title: |
+      Step Version (git tag in the repository! Example: 1.0.0)
+    mapped_to: STEP_TESTER_STEP_VERSION_TAG
+  - title: |
+      Step's Inputs
+    mapped_to: __INPUT_FILE__
