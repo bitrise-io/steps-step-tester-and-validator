@@ -16,5 +16,5 @@ inputs:
       Step Version (git tag in the repository! Example: 1.0.0)
     mapped_to: STEP_TESTER_STEP_VERSION_TAG
   - title: |
-      Step's Inputs
+      Step's Inputs, one input per line in the format: key=the value, anything until newline
     mapped_to: __INPUT_FILE__

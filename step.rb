@@ -130,6 +130,26 @@ end
 # -----------------------
 # --- MAIN
 
+def collect_step_input_envs_from_string(str)
+	step_envs = []
+
+	str.each_line {|line|
+		splits = line.split("=")
+		env_key = splits.shift.strip # first item is the key
+		env_value = splits.join("=") # rest is the value
+		if env_key and env_value
+			step_envs << {
+				key: env_key,
+				value: env_value.chomp
+			}
+		else
+			print_warning("Possibly invalid input (will be skipped), key or value missing: #{line}")
+		end
+	}
+
+	return step_envs
+end
+
 is_failed = false
 begin
 	unless system(%Q{git clone -b "#{options[:step_version]}" "#{options[:step_repo]}" ./stepdir})
@@ -145,6 +165,28 @@ begin
 	$summary_info[:is_readme_file_found] = true if File.file?(File.join(step_base_dir, "README.md"))
 	unless print_formatted_summary()
 		raise "A required Step file is missing!"
+	end
+
+	puts_section_to_formatted_output("# Running the Step", true)
+	step_envs = collect_step_input_envs_from_string(options[:step_args_content])
+	puts " (debug) step_envs: #{step_envs}"
+
+	# clean up own ENV
+	ENV['STEP_TESTER_STEP_REPO'] = nil
+	ENV['STEP_TESTER_STEP_VERSION_TAG'] = nil
+	ENV['__INPUT_FILE__'] = nil
+	# set Step's ENV
+	if step_envs.length > 0
+		puts_section_to_formatted_output("## Envs:", true)
+		step_envs.each {|an_env|
+			ENV[an_env[:key]] = an_env[:value]
+			puts_string_to_formatted_output("* #{an_env[:key]} : #{ENV[an_env[:key]]}", true)
+		}
+	end
+	puts_section_to_formatted_output("---------------------------------------", true)
+	
+	unless system(%Q{cd stepdir && bash step.sh})
+		raise "Step Failed"
 	end
 rescue => ex
 	print_error("#{ex}")
