@@ -16,5 +16,8 @@ inputs:
       Step Version (git tag in the repository! Example: 1.0.0)
     mapped_to: STEP_TESTER_STEP_VERSION_TAG
   - title: |
+      [TEST] Branch of the Repository - use it only for testing! Real Step repositories should use version tags instead of branch! Note: this parameter is only used if no Tag is specified (leave the Tag input empty)!
+    mapped_to: STEP_TESTER_STEP_TEST_BRANCH
+  - title: |
       Step's Inputs, one input per line in the format: key=the value, anything until newline
     mapped_to: __INPUT_FILE__
