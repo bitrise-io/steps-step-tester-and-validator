@@ -5,9 +5,12 @@ require 'pathname'
 options = {
 	step_repo: ENV['STEP_TESTER_STEP_REPO'],
 	step_version: ENV['STEP_TESTER_STEP_VERSION_TAG'],
-	step_args_file: ENV['__INPUT_FILE__'],
-	step_args_content: ''
+    step_test_branch: ENV['STEP_TESTER_STEP_TEST_BRANCH'],
+	step_args_file: ENV['__INPUT_FILE__']
 }
+
+git_checkout_option = '', # will be either the Tag (if specified) or the test-branch
+step_args_content = ''
 
 $summary_info = {
 	is_clone_ok: false,
@@ -114,15 +117,23 @@ unless options[:step_repo]
 	print_error "Step Repository URL not defined"
 	exit 1
 end
-unless options[:step_version]
-	print_error "Step Version not defined"
-	exit 1
-end
-if options[:step_args_file]
-	options[:step_args_content] = File.read(options[:step_args_file])
+if options[:step_version]
+	git_checkout_option = options[:step_version]
+else
+	print_warning "Step Version (Tag) not defined"
+	if options[:step_test_branch]
+      print_warning "Will use the provided Test-Branch instead - this is only recommended for testing, for production you should always use Version Tags instead of branch!"
+      git_checkout_option = options[:step_test_branch]
+    else
+      print_error "Neither a Version Tag nor a Test-Branch defined!"
+      exit 1
+    end
 end
 
-unless options[:step_args_content]
+if options[:step_args_file]
+	step_args_content = File.read(options[:step_args_file])
+end
+unless step_args_content
 	print_warning "Step Args not defined - no Input will be passed to the Step"
 end
 
@@ -152,7 +163,7 @@ end
 
 is_failed = false
 begin
-	unless system(%Q{git clone -b "#{options[:step_version]}" "#{options[:step_repo]}" ./stepdir})
+	unless system(%Q{git clone -b "#{git_checkout_option}" "#{options[:step_repo]}" ./stepdir})
 		raise "Failed to clone the Step Repository"
 	end
 	step_base_dir = Pathname.new('./stepdir').realpath.to_s
@@ -168,19 +179,20 @@ begin
 	end
 
 	puts_section_to_formatted_output("# Running the Step", true)
-	step_envs = collect_step_input_envs_from_string(options[:step_args_content])
+	step_envs = collect_step_input_envs_from_string(step_args_content)
 	puts " (debug) step_envs: #{step_envs}"
 
 	# clean up own ENV
-	ENV['STEP_TESTER_STEP_REPO'] = nil
-	ENV['STEP_TESTER_STEP_VERSION_TAG'] = nil
-	ENV['__INPUT_FILE__'] = nil
+	ENV.delete('STEP_TESTER_STEP_REPO')
+	ENV.delete('STEP_TESTER_STEP_VERSION_TAG')
+	ENV.delete('STEP_TESTER_STEP_TEST_BRANCH')
+	ENV.delete('__INPUT_FILE__')
 	# set Step's ENV
 	if step_envs.length > 0
 		puts_section_to_formatted_output("## Envs:", true)
 		step_envs.each {|an_env|
 			ENV[an_env[:key]] = an_env[:value]
-			puts_string_to_formatted_output("* #{an_env[:key]} : #{ENV[an_env[:key]]}", true)
+			puts_string_to_formatted_output("* `#{an_env[:key]}` : `#{ENV[an_env[:key]]}`", true)
 		}
 	end
 	puts_section_to_formatted_output("---------------------------------------", true)
