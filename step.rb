@@ -161,6 +161,11 @@ def collect_step_input_envs_from_string(str)
 	return step_envs
 end
 
+def expand_env_vars_in_string(str)
+	return str.gsub(/\$([a-zA-Z_]+[a-zA-Z0-9_]*)|\$\{(.+)\}/) { ENV[$1 || $2] }
+end
+
+
 is_failed = false
 begin
 	unless system(%Q{git clone -b "#{git_checkout_option}" "#{options[:step_repo]}" ./stepdir})
@@ -191,12 +196,15 @@ begin
 	if step_envs.length > 0
 		puts_section_to_formatted_output("## Envs:", true)
 		step_envs.each {|an_env|
-			ENV[an_env[:key]] = an_env[:value]
+			an_original_value = an_env[:value]
+			an_expanded_value = expand_env_vars_in_string(an_original_value)
+			ENV[an_env[:key]] = an_expanded_value
 			puts_string_to_formatted_output("* `#{an_env[:key]}` : `#{ENV[an_env[:key]]}`", true)
+			puts_string_to_formatted_output("    * (not expanded / original input: `#{an_original_value}`)", true)
 		}
 	end
 	puts_section_to_formatted_output("---------------------------------------", true)
-	
+
 	unless system(%Q{cd stepdir && bash step.sh})
 		raise "Step Failed"
 	end
