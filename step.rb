@@ -203,10 +203,12 @@ begin
 			puts_string_to_formatted_output("    * (not expanded / original input: `#{an_original_value}`)", true)
 		}
 	end
-	puts_section_to_formatted_output("---------------------------------------", true)
+	puts_section_to_formatted_output("---------- RUN ---", true)
 
 	unless system(%Q{cd stepdir && bash step.sh})
 		raise "Step Failed"
+	else
+		puts_section_to_formatted_output("---------- END ---", true)
 	end
 rescue => ex
 	print_error("#{ex}")
