@@ -20,8 +20,13 @@ $summary_info = {
 	is_license_file_found: false
 }
 
+#
 $formatted_output_file_path = ENV['BITRISE_STEP_FORMATTED_OUTPUT_FILE_PATH']
 system("rm #{$formatted_output_file_path}")
+#
+ENV['BITRISE_STEP_FORMATTED_OUTPUT_FILE_PATH'] = "#{$formatted_output_file_path}-orig"
+$modified_step_formatted_output_file_path = ENV['BITRISE_STEP_FORMATTED_OUTPUT_FILE_PATH']
+system("rm #{$modified_step_formatted_output_file_path}")
 
 def puts_string_to_formatted_output(text, is_log_print=false)
 	open($formatted_output_file_path, 'a') { |f|
@@ -207,13 +212,23 @@ begin
 
 	unless system(%Q{cd stepdir && bash step.sh})
 		raise "Step Failed"
-	else
-		puts_section_to_formatted_output("---------- END ---", true)
 	end
 rescue => ex
 	print_error("#{ex}")
 	is_failed = true
 ensure
+	if File.exist?($modified_step_formatted_output_file_path)
+		begin
+			step_formatted_output_content = File.open($modified_step_formatted_output_file_path, "r").read	
+			puts_section_to_formatted_output(step_formatted_output_content)
+		rescue
+			puts_section_to_formatted_output("*Could not read the Step's formatted output file", true)		
+		end
+	else
+		puts_section_to_formatted_output("*Step did not generate a Formatted Output file*", true)
+	end
+	puts_section_to_formatted_output("---------- END ---", true)
+	#
 	system(%Q{rm -rf "#{step_base_dir}"})
 end
 
