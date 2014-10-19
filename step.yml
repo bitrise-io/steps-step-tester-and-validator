@@ -1,5 +1,5 @@
 ---
-name: Bitrise Step Tester and Validator Step
+name: Step Tester and Validator Step
 description: |
   Validates the Step Repository and runs the Step.
 
